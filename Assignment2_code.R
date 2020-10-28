@@ -8,6 +8,8 @@ library(seqinr)
 library(Biostrings)
 #install.packages("tidyverse")
 library(tidyverse)
+#install.packages("randomForest")
+library(randomForest)
 
 #### get data ----
 entrez_dbs()
@@ -17,7 +19,7 @@ entrez_db_searchable("nuccore")
 ?entrez_search
 Cyp_search <- entrez_search(db = "nuccore", term = "(Cyprinidae[ORGN] AND Rag1[Gene] AND 400:2000[SLEN]) NOT (genome[TITL])", retmax=150)
 
-maxHits <- Danio_search$count
+maxHits <- Cyp_search$count
 maxHits
 
 Cyp_search <- entrez_search(db = "nuccore", term = "(Cyprinidae[ORGN] AND Rag1[Gene] AND 400:2000[SLEN]) NOT (genome[TITL])", retmax = 150)
@@ -57,10 +59,12 @@ Rag1_stringSet <- readDNAStringSet("Rag1_fetch.fasta")
 
 Rag1df <- data.frame(Rag1_Title = names(Rag1_stringSet), Rag1_Sequence = paste(Rag1_stringSet))
 
-Rag1df$Species_Name <- word(Rag1db$Rag1_Title, 2L, 3L)
+Rag1df$Species_Name <- word(Rag1df$Rag1_Title, 2L, 3L)
 Rag1df <- Rag1df[, c("Rag1_Title", "Species_Name", "Rag1_Sequence")]
 view(Rag1df)
 
+
+##### Rag1 ----
 Rag2_search <- entrez_search(db = "nuccore", term = "(Cyprinidae[ORGN] AND Rag2[Gene] AND 400:2000[SLEN]) NOT (genome[TITL])", retmax = 150, retmax = 100)
 Rag2_fetch <- entrez_fetch(db = "nuccore", id = Rag2_search$ids, rettype = "fasta")
 write(Rag2_fetch, "Rag2_fetch.fasta", sep = "\n") 
@@ -69,12 +73,43 @@ head(Rag2_fetch)
 
 Rag2stringSet <- readDNAStringSet("Rag2_fetch.fasta")
 
-Rag2df <- data.frame(Rag2_Title = names(Rag2_stringSet), Rag2_Sequence = paste(Rag2_stringSet))
+Rag2df <- data.frame(Rag2_Title=names(Rag2stringSet), Rag2_Sequence = paste(Rag2stringSet))
 # Clean up species names.
 
-Rag2df$Species_Name <- word(Rag2df$Rag2df_Title, 2L, 3L)
+Rag2df$Species_Name <- word(Rag2df$Rag2_Title, 2L, 3L)
 # Rearrange the columns.
 
 Rag2df <- Rag2df[, c("Rag2_Title", "Species_Name", "Rag2_Sequence")]
 # Let's look at the dataframe.
 View(Rag2df)
+
+
+#how many unique species
+length(unique(Rag1df$Species_Name))
+
+#df with only unique species
+Rag1df_Subset <- Rag1df %>% 
+  group_by(Species_Name) %>%  ## Group by Name.
+  sample_n(1) 
+
+#check if correct
+all.equal(length(unique(Rag1df$Species_Name)), nrow(Rag1df_Subset))
+#TRUE
+
+#how many unique species
+length(unique(Rag2df$Species_Name))
+
+#df with only unique species
+Rag2df_Subset <- Rag2df %>% 
+  group_by(Species_Name) %>%  ## Group by Name.
+  sample_n(1) 
+
+#check if correct
+all.equal(length(unique(Rag2df$Species_Name)), nrow(Rag2df_Subset))
+#TRUE
+
+Ragoverlap_df <- merge(Rag1df_Subset, Rag2df_Subset, by = "Species_Name", all = F)
+
+hist(nchar(Ragoverlap_df$Rag1_Sequence), xlab = "Sequence Length", ylab = "
+     Frequency", main = "Frequency Histogram of Rag1 Sequence Lengths")
+summary(nchar(Ragoverlap_df$Rag1_Sequence))
