@@ -113,3 +113,53 @@ Ragoverlap_df <- merge(Rag1df_Subset, Rag2df_Subset, by = "Species_Name", all = 
 hist(nchar(Ragoverlap_df$Rag1_Sequence), xlab = "Sequence Length", ylab = "
      Frequency", main = "Frequency Histogram of Rag1 Sequence Lengths")
 summary(nchar(Ragoverlap_df$Rag1_Sequence))
+
+hist(nchar(Ragoverlap_df$Rag2_Sequence), xlab = "Sequence Length", ylab = "
+     Frequency", main = "Frequency Histogram of Rag2 Sequence Lengths")
+summary(nchar(Ragoverlap_df$Rag2_Sequence))
+
+
+##steps may not be necessary bc seqeunces look pretty clean, check above for this
+dfSeqR1 <- Ragoverlap_df %>%
+  mutate(Rag1_Seq2 = str_remove(Rag1_Sequence, "^[-N]+")) %>%
+  mutate(Rag1_Seq2 = str_remove(Rag1_Seq2, "[-N]+$")) %>%
+  mutate(Rag1_Seq2 = str_remove_all(Rag1_Seq2, "-+")) %>%
+  filter(str_count(Rag1_Seq2, "N") <= (0.05 * str_count(Rag1_Sequence)))
+
+dfSeqR1Comp <- cbind(dfSeqR1$Rag1_Sequence, dfSeqR1$Rag1_Seq2)
+view(dfSeqR1Comp)
+
+###same here
+dfSeqR2 <- Ragoverlap_df %>%
+  mutate(Rag2_Seq2 = str_remove(Rag2_Sequence, "^[-N]+")) %>%
+  mutate(Rag2_Seq2 = str_remove(Rag2_Seq2, "[-N]+$")) %>%
+  mutate(Rag2_Seq2 = str_remove_all(Rag2_Seq2, "-+")) %>%
+  filter(str_count(Rag2_Seq2, "N") <= (0.05 * str_count(Rag2_Sequence)))
+
+dfSeqComp <- cbind(dfSeqR2$Rag2_Sequence, dfSeqR2$Rag2_Seq2)
+view(dfSeqComp)
+
+
+##
+q1 <- quantile(nchar(dfSeqR1$Rag1_Seq2), probs = 0.25, na.rm = TRUE)
+q1
+
+q3 <- quantile(nchar(dfSeqR1$Rag1_Seq2), probs = 0.75, na.rm = TRUE)
+q3
+
+
+dim(Ragoverlap_df)
+sum(is.na(Ragoverlap_df$Rag1_Sequence))
+sum(is.na(Ragoverlap_df$Rag2_Sequence))
+summary(str_count(Ragoverlap_df$Rag1_Sequence))
+summary(str_count(Ragoverlap_df$Rag2_Sequence))
+         
+
+##Calc sequences
+Ragoverlap_df <- as.data.frame(Ragoverlap_df)
+Ragoverlap_df$Rag1_Sequence <- DNAStringSet(Ragoverlap_df$Rag1_Sequence)
+view(Ragoverlap_df)
+Ragoverlap_df$Rag2_Sequence <- DNAStringSet(Ragoverlap_df$Rag2_Sequence)
+
+Ragoverlap_df <- cbind(Ragoverlap_df, as.data.frame(letterFrequency(Ragoverlap_df$Rag1_Sequence, letters = c("A", "C","G", "T"))))
+view(Ragoverlap_df)
